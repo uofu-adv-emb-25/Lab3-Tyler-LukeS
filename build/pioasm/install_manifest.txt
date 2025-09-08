@@ -1,0 +1,5 @@
+/home/tyler/ece6785/labs/lab0/build/pioasm-install/pioasm/pioasm
+/home/tyler/ece6785/labs/lab0/build/pioasm-install/pioasm/pioasmTargets.cmake
+/home/tyler/ece6785/labs/lab0/build/pioasm-install/pioasm/pioasmTargets-release.cmake
+/home/tyler/ece6785/labs/lab0/build/pioasm-install/pioasm/pioasmConfig.cmake
+/home/tyler/ece6785/labs/lab0/build/pioasm-install/pioasm/pioasmConfigVersion.cmake
