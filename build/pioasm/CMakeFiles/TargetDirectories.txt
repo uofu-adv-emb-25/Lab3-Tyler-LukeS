@@ -1,7 +1,0 @@
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/pioasm.dir
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/edit_cache.dir
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/rebuild_cache.dir
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/list_install_components.dir
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/install.dir
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/install/local.dir
-/home/tyler/ece6785/labs/lab0/build/pioasm/CMakeFiles/install/strip.dir
