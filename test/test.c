@@ -31,15 +31,15 @@ void test_run_routine(void)
     TEST_ASSERT_EQUAL_INT(0, counter);
 }
 
-// void test_loop_runs(void)
-// {
-//     int counter = 0;
-//     SemaphoreHandle_t semaphore = xSemaphoreCreateCounting(1, 1);
-//     int result = do_loop(semaphore, &counter, "test", 10);
+void test_run_routine_positive(void)
+{
+    int counter = 0;
+    SemaphoreHandle_t semaphore = xSemaphoreCreateCounting(1, 1);
+    int result = run_routine(semaphore, &counter, "test", 10);
 
-//     TEST_ASSERT_EQUAL_INT(pdTRUE, result);
-//     TEST_ASSERT_EQUAL_INT(1, counter);
-// }
+    TEST_ASSERT_EQUAL_INT(pdTRUE, result);
+    TEST_ASSERT_EQUAL_INT(1, counter);
+}
 
 
 
@@ -49,7 +49,7 @@ void supervisor_thread(__unused void *args)
         printf("Starting tests...\n");
         UNITY_BEGIN();
         RUN_TEST(test_run_routine);
-        // RUN_TEST(test_loop_runs);
+        RUN_TEST(test_run_routine_positive);
         // RUN_TEST(test_deadlock);
         // RUN_TEST(test_orphaned);
         // RUN_TEST(test_unorphaned);
