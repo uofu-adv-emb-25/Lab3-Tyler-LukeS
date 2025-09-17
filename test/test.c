@@ -20,9 +20,7 @@ void setUp(void) {}
 void tearDown(void) {}
 
 
-/**************** Activity 0-2 ****************/
-void test_run_routine(void)
-{
+void test_run_routine(void) {
     SemaphoreHandle_t semaphore = xSemaphoreCreateCounting(1, 1);
     int counter = 0;
     xSemaphoreTake(semaphore, portMAX_DELAY);
@@ -33,8 +31,7 @@ void test_run_routine(void)
     TEST_ASSERT_EQUAL_INT(0, counter);
 }
 
-void test_run_routine_positive(void)
-{
+void test_run_routine_positive(void) {
     int counter = 0;
     SemaphoreHandle_t semaphore = xSemaphoreCreateCounting(1, 1);
     int result = run_routine(semaphore, &counter, "test", 10);
@@ -125,8 +122,7 @@ void supervisor_thread(__unused void *args)
 }
 
 
-int main (void)
-{
+int main (void) {
     stdio_init_all();
     hard_assert(cyw43_arch_init() == PICO_OK);
     xTaskCreate(supervisor_thread, "TestSupervisor",
