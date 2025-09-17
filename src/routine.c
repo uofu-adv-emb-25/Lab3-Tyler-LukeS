@@ -17,3 +17,21 @@ int run_routine(SemaphoreHandle_t semaphore,
     xSemaphoreGive(semaphore);
     return pdTRUE;
 }
+
+// Create a deadlock routine that takes in a semaphore and locks it
+void deadlock_routine(void* args) {
+    struct DeadlockArgs *dargs = (struct DeadlockArgs *) args;
+    
+    xSemaphoreTake(dargs->a, portMAX_DELAY); // attempt to take lock a
+    {
+        dargs->counter++;
+        vTaskDelay(100); // Delay so that the other deadlock thread can take lock b
+        xSemaphoreTake(dargs->b, portMAX_DELAY); // attempt to take lock b
+        {
+            dargs->counter++; // This should never run
+        }
+        xSemaphoreGive(dargs->b);
+    }
+    xSemaphoreGive(dargs->a);
+    vTaskSuspend(NULL);
+}
