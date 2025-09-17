@@ -44,7 +44,6 @@ void test_run_routine_positive(void)
 }
 
 void test_deadlock(void) {
-    int counter = 0;
     TaskHandle_t thread1, thread2;
     SemaphoreHandle_t semaphore1 = xSemaphoreCreateCounting(1, 1);
     SemaphoreHandle_t semaphore2 = xSemaphoreCreateCounting(1, 1);
@@ -78,6 +77,36 @@ void test_deadlock(void) {
 }
 
 
+void test_orphan_lock(void) {
+    TaskHandle_t thread;
+    SemaphoreHandle_t lock = xSemaphoreCreateCounting(1, 1);
+    struct DeadlockArgs dargs = {lock, NULL, 0};
+
+    xTaskCreate(orphaned_lock, "orphan_task", configMINIMAL_STACK_SIZE, &dargs, TASK_1_PRIORITY, &thread);
+    
+    vTaskDelay(500);
+    vTaskSuspend(thread);
+
+    TEST_ASSERT_EQUAL_INT(uxSemaphoreGetCount(lock), 0);
+    TEST_ASSERT_EQUAL_INT(1, dargs.counter);
+    vTaskDelete(thread);
+}
+
+void test_unorphaned(void) {
+    TaskHandle_t thread;
+    SemaphoreHandle_t lock = xSemaphoreCreateCounting(1, 1);
+    struct DeadlockArgs dargs = {lock, NULL, 0};
+
+    xTaskCreate(unorphaned_lock, "orphan_task", configMINIMAL_STACK_SIZE, &dargs, TASK_1_PRIORITY, &thread);
+    
+    vTaskDelay(1000);
+    vTaskSuspend(thread);
+
+    TEST_ASSERT_NOT_EQUAL_INT(1, dargs.counter);
+    TEST_ASSERT_NOT_EQUAL_INT(2, dargs.counter);
+
+    vTaskDelete(thread);
+}
 
 void supervisor_thread(__unused void *args)
 {
@@ -87,13 +116,14 @@ void supervisor_thread(__unused void *args)
         RUN_TEST(test_run_routine);
         RUN_TEST(test_run_routine_positive);
         RUN_TEST(test_deadlock);
-        // RUN_TEST(test_orphaned);
-        // RUN_TEST(test_unorphaned);
+        RUN_TEST(test_orphan_lock);
+        RUN_TEST(test_unorphaned);
 
         UNITY_END();
         sleep_ms(10000);
     }
 }
+
 
 int main (void)
 {

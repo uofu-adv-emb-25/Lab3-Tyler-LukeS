@@ -15,3 +15,8 @@ struct DeadlockArgs {
 int run_routine(SemaphoreHandle_t semaphore, int *counter, const char *from, TickType_t timeout);
 
 void deadlock_routine(void* args);
+
+void orphaned_lock(void* args);
+
+void unorphaned_lock(void* args);
+

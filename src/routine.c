@@ -35,3 +35,33 @@ void deadlock_routine(void* args) {
     xSemaphoreGive(dargs->a);
     vTaskSuspend(NULL);
 }
+
+void orphaned_lock(void* args) {
+    struct DeadlockArgs *dargs = (struct DeadlockArgs *) args;
+    while (1) {
+        xSemaphoreTake(dargs->a, portMAX_DELAY);
+        dargs->counter++;
+        if (dargs->counter % 2) { // True if count is odd
+            continue;
+        }
+        printf("Count %d\n", dargs->counter);
+        xSemaphoreGive(dargs->a);
+    }
+}
+
+void unorphaned_lock(void* args) {
+    struct DeadlockArgs *dargs = (struct DeadlockArgs *) args;
+    while (1) {
+        xSemaphoreTake(dargs->a, portMAX_DELAY);
+        {
+
+        dargs->counter++;
+        if ( !(dargs->counter % 2) ) { // True if count is Even
+            printf("Count %d\n", dargs->counter);
+        }
+        
+        }
+        xSemaphoreGive(dargs->a);
+        vTaskDelay(100);
+    }
+}
