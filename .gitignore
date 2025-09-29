@@ -8,11 +8,10 @@ log
 *-profile
 
 .vscode/
+.venv
+
 **/build/
-CMakeLists.txt
 **/CMakeFiles/
 **/Makefile
 **/CTestTestfile.cmake
 **/cmake_install.cmake
-
-.venv

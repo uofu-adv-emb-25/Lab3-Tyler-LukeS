@@ -1,2 +1,0 @@
-/usr/bin/arm-none-eabi-ar qc libunity.a CMakeFiles/unity.dir/home/tyler/ece6785/Unity/src/unity.c.o
-/usr/bin/arm-none-eabi-ranlib libunity.a

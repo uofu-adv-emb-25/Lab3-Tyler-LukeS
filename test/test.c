@@ -1,35 +1,132 @@
 #include <stdio.h>
+#include <FreeRTOS.h>
+#include <semphr.h>
+#include <task.h>
 #include <pico/stdlib.h>
+#include <pico/cyw43_arch.h>
 #include <stdint.h>
-#include <unity.h>
 #include "unity_config.h"
+#include <unity.h>
+
+#include "routine.h"
+
+// The top test runner thread should have highest priority.
+#define SUPERVISOR_THREAD_PRIORITY ( tskIDLE_PRIORITY + 5UL )
+#define TASK_1_PRIORITY ( SUPERVISOR_THREAD_PRIORITY - 1UL )
+#define TASK_2_PRIORITY ( SUPERVISOR_THREAD_PRIORITY - 1UL )
 
 void setUp(void) {}
 
 void tearDown(void) {}
 
-void test_variable_assignment()
-{
-    int x = 1;
-    TEST_ASSERT_TRUE_MESSAGE(x == 1,"Variable assignment failed.");
+
+void test_run_routine(void) {
+    SemaphoreHandle_t semaphore = xSemaphoreCreateCounting(1, 1);
+    int counter = 0;
+    xSemaphoreTake(semaphore, portMAX_DELAY);
+
+    int result = run_routine(semaphore, &counter, "test", 10);
+
+    TEST_ASSERT_EQUAL_INT(pdFALSE, result);
+    TEST_ASSERT_EQUAL_INT(0, counter);
 }
 
-void test_multiplication(void)
-{
-    int x = 30;
-    int y = 6;
-    int z = x / y;
-    TEST_ASSERT_TRUE_MESSAGE(z == 5, "Multiplication of two integers returned incorrect value.");
+void test_run_routine_positive(void) {
+    int counter = 0;
+    SemaphoreHandle_t semaphore = xSemaphoreCreateCounting(1, 1);
+    int result = run_routine(semaphore, &counter, "test", 10);
+
+    TEST_ASSERT_EQUAL_INT(pdTRUE, result);
+    TEST_ASSERT_EQUAL_INT(1, counter);
 }
 
-int main (void)
+void test_deadlock(void) {
+    TaskHandle_t thread1, thread2;
+    SemaphoreHandle_t semaphore1 = xSemaphoreCreateCounting(1, 1);
+    SemaphoreHandle_t semaphore2 = xSemaphoreCreateCounting(1, 1);
+
+    struct DeadlockArgs da1 = {semaphore1, semaphore2, 0};
+    struct DeadlockArgs da2 = {semaphore2, semaphore1, 0};
+
+    xTaskCreate(deadlock_routine, "1", configMINIMAL_STACK_SIZE, (void*) &da1, TASK_1_PRIORITY, &thread1);
+    xTaskCreate(deadlock_routine, "2", configMINIMAL_STACK_SIZE, (void*) &da2, TASK_2_PRIORITY, &thread2);
+
+    printf("Created threads\n");
+    // Once this times out, this thread will preempt the child threads
+    // so we can check their state.
+    vTaskDelay(1000);
+    printf("Waited 1000 ticks\n");
+    
+    // Here we have paused everything and are inspecting it frozen in place.
+    vTaskSuspend(thread1);
+    vTaskSuspend(thread2);
+
+    TEST_ASSERT_EQUAL_INT(uxSemaphoreGetCount(semaphore1), 0);
+    TEST_ASSERT_EQUAL_INT(uxSemaphoreGetCount(semaphore2), 0);
+    // Each counter should only be incremented once
+    TEST_ASSERT_EQUAL_INT(1, da1.counter);
+    TEST_ASSERT_EQUAL_INT(1, da2.counter);
+    printf("Killing threads\n"); // memory management
+    vTaskDelete(thread1);
+    vTaskDelete(thread2);
+    printf("Killed threads\n");
+    
+}
+
+
+void test_orphan_lock(void) {
+    TaskHandle_t thread;
+    SemaphoreHandle_t lock = xSemaphoreCreateCounting(1, 1);
+    struct DeadlockArgs dargs = {lock, NULL, 0};
+
+    xTaskCreate(orphaned_lock, "orphan_task", configMINIMAL_STACK_SIZE, &dargs, TASK_1_PRIORITY, &thread);
+    
+    vTaskDelay(500);
+    vTaskSuspend(thread);
+
+    TEST_ASSERT_EQUAL_INT(uxSemaphoreGetCount(lock), 0);
+    TEST_ASSERT_EQUAL_INT(1, dargs.counter);
+    vTaskDelete(thread);
+}
+
+void test_unorphaned(void) {
+    TaskHandle_t thread;
+    SemaphoreHandle_t lock = xSemaphoreCreateCounting(1, 1);
+    struct DeadlockArgs dargs = {lock, NULL, 0};
+
+    xTaskCreate(unorphaned_lock, "orphan_task", configMINIMAL_STACK_SIZE, &dargs, TASK_1_PRIORITY, &thread);
+    
+    vTaskDelay(1000);
+    vTaskSuspend(thread);
+
+    TEST_ASSERT_NOT_EQUAL_INT(1, dargs.counter);
+    TEST_ASSERT_NOT_EQUAL_INT(2, dargs.counter);
+
+    vTaskDelete(thread);
+}
+
+void supervisor_thread(__unused void *args)
 {
+    while(1) {
+        printf("Starting tests...\n");
+        UNITY_BEGIN();
+        RUN_TEST(test_run_routine);
+        RUN_TEST(test_run_routine_positive);
+        RUN_TEST(test_deadlock);
+        RUN_TEST(test_orphan_lock);
+        RUN_TEST(test_unorphaned);
+
+        UNITY_END();
+        sleep_ms(10000);
+    }
+}
+
+
+int main (void) {
     stdio_init_all();
-    sleep_ms(5000); // Give time for TTY to attach.
-    printf("Start tests\n");
-    UNITY_BEGIN();
-    RUN_TEST(test_variable_assignment);
-    RUN_TEST(test_multiplication);
-    sleep_ms(5000);
-    return UNITY_END();
+    hard_assert(cyw43_arch_init() == PICO_OK);
+    xTaskCreate(supervisor_thread, "TestSupervisor",
+                configMINIMAL_STACK_SIZE, NULL, SUPERVISOR_THREAD_PRIORITY, NULL);
+    vTaskStartScheduler();
+	return 0;
 }
